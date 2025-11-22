@@ -18,7 +18,6 @@ Remotely Call abap2UI5 Apps via HTTP
 
     "2. create new request
     DATA lo_client   TYPE REF TO if_web_http_client.
-*  lo_client_proxy  TYPE REF TO /iwbep/if_cp_client_proxy.
 
     DATA(lo_destination) = cl_http_destination_provider=>create_by_comm_arrangement(
       comm_scenario  = 'TRAVEL_BASIC'
