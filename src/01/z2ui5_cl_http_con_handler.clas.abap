@@ -22,10 +22,10 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
     DATA(ls_req) = z2ui5_cl_http_handler=>get_request( server = server ).
 
-    DATA(ls_res) = z2ui5_cl_http_con_util=>http_call( method      = ls_req-method
-                                                      body        = ls_req-body
-                                                      destination = c_destination
-                                                      url         = c_url ).
+    DATA(ls_res) = z2ui5_cl_util_http=>client_call( method      = ls_req-method
+                                                    body        = ls_req-body
+                                                    destination = c_destination
+                                                    url         = c_url ).
 
     DATA(lo_server) = z2ui5_cl_util_http=>factory( server ).
     lo_server->set_cdata( ls_res-body ).
