@@ -1,0 +1,21 @@
+{
+    "name": "abap2ui5-http-connector",
+    "private": true,
+    "version": "1.0.0",
+    "description": "abap2UI5 HTTP Connector",
+    "scripts": {
+      "lint": "abaplint ./abaplint.jsonc"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/abap2UI5-addons/http-connector.git"
+    },
+    "license": "MIT",
+    "bugs": {
+      "url": "https://github.com/abap2UI5-addons/http-connector/issues"
+    },
+    "homepage": "https://github.com/abap2UI5-addons/http-connector#readme",
+    "devDependencies": {
+      "@abaplint/cli": "^2.115.2"
+    }
+  }
