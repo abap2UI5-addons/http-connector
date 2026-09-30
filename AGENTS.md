@@ -38,10 +38,21 @@ The connector calls:
 | `z2ui5_cl_ui5_http_handler=>run` | `src/02` | released; the source side is nothing more than this call |
 | `z2ui5_cl_ui5_http_handler=>get_request` | `src/02` | released, but the core marks it as having no caller and as a candidate for its next API revision — it does not know about this one |
 | `z2ui5_cl_ui5_http_handler=>_check_csrf_rejected` | `src/02` | released |
-| `z2ui5_cl_ui5_util_http=>factory`, `=>client_call` | `src/00/03` | **not released** — a vendored utility the core may rename without notice, and it names `client_call` as having no caller; recorded in `abap2ui5lint-baseline.json` |
+| `z2ui5_cl_ui5_util_http=>factory`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below |
 
 The connector needs abap2UI5 1.143.0 or newer, the first release with
 `z2ui5_cl_ui5_http_handler`.
+
+### z2ui5_cl_ui5_util_http stays
+
+Going through the core's own HTTP utility instead of `if_http_server` /
+`cl_http_client` directly is a deliberate maintainer decision: the connector
+handles the request exactly the way the framework does. Do not rewrite it to
+the kernel APIs to satisfy the linter. The finding is accepted in
+`abap2ui5lint-baseline.json`; the price is that a rename of that class in the
+core breaks this repository, which the weekly scheduled run exists to notice.
+The core comments `client_call` as having no caller — this repository is the
+caller, so a core change that drops it has to be answered here.
 
 ## Build and verify
 
