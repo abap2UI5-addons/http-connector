@@ -44,7 +44,7 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
 
     DATA(lo_server) = z2ui5_cl_ui5_util_http=>factory( server ).
-    DATA(ls_req) = z2ui5_cl_ui5_http_handler=>get_request( server = server ).
+    DATA(ls_req) = lo_server->get_req_info( ).
 
     IF ls_req-method = `POST`
        AND z2ui5_cl_ui5_http_handler=>_check_csrf_rejected(
@@ -60,10 +60,14 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     ELSE.
 
       TRY.
+          " the query goes along raw - ?z2ui5-bundle, app_start and every
+          " other URL parameter reach the source system as the browser sent
+          " them. The path does not: the source answers on its own node
           ls_res = z2ui5_cl_ui5_util_http=>client_call( method      = ls_req-method
                                                         body        = ls_req-body
                                                         destination = c_destination
-                                                        url         = c_url ).
+                                                        url         = c_url
+                                                        query       = ls_req-query ).
 
           " a response without a status line would go out as status 0, which the
           " browser reports as a network error without any readable reason

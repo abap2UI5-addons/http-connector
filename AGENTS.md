@@ -36,12 +36,12 @@ The connector calls:
 | Member | Where in the core | Status |
 | --- | --- | --- |
 | `z2ui5_cl_ui5_http_handler=>run` | `src/02` | released; the source side is nothing more than this call |
-| `z2ui5_cl_ui5_http_handler=>get_request` | `src/02` | released, but the core marks it as having no caller and as a candidate for its next API revision — it does not know about this one |
 | `z2ui5_cl_ui5_http_handler=>_check_csrf_rejected` | `src/02` | released |
-| `z2ui5_cl_ui5_util_http=>factory`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below |
+| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below. The `query` of both is newer than 1.146.0 |
 
-The connector needs abap2UI5 1.143.0 or newer, the first release with
-`z2ui5_cl_ui5_http_handler`.
+The consumer needs an abap2UI5 release newer than 1.146.0 (the query of
+`z2ui5_cl_ui5_util_http`), the source 1.143.0 or newer (the first release with
+`z2ui5_cl_ui5_http_handler`).
 
 ### z2ui5_cl_ui5_util_http stays
 
