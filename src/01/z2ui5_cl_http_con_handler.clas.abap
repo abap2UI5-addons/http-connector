@@ -14,7 +14,7 @@ CLASS z2ui5_cl_http_con_handler DEFINITION
     " of the framework has to run here - the source system only ever sees the
     " forwarded call, which carries no Origin at all and passes unconditionally.
     " Set to abap_false only if the source system opts out through its own user
-    " exit (z2ui5_if_exit~set_config_http_post -> check_csrf_active).
+    " exit (z2ui5_if_ui5_exit~set_config_http_post -> check_csrf_active).
     CONSTANTS c_check_csrf TYPE abap_bool VALUE abap_true.
 
   PROTECTED SECTION.
