@@ -8,7 +8,7 @@ Remotely Call abap2UI5 Apps via HTTP
 
 
     "1. read request
-    DATA(lo_http_request) = z2ui5_cl_util_http=>factory_cloud( req = request res = response ).
+    DATA(lo_http_request) = z2ui5_cl_ui5_util_http=>factory_cloud( req = request res = response ).
 
     DATA(lv_method) = lo_http_request->get_method( ).
     DATA(lv_cdata) = lo_http_request->get_cdata( ).
@@ -42,7 +42,7 @@ Remotely Call abap2UI5 Apps via HTTP
 
     "4. create response
     "todo: add response handling to util
-*    DATA(lo_http_response) = z2ui5_cl_util_http=>factory_cloud_server( lo_response ).
+*    DATA(lo_http_response) = z2ui5_cl_ui5_util_http=>factory_cloud_server( lo_response ).
 
     DATA(ld_content_type) = lo_response->get_content_type( ).
     DATA(ls_status) = lo_response->get_status( ).
