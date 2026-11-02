@@ -14,8 +14,9 @@ consumer and source, and depends on the
 [abap2UI5](https://github.com/abap2UI5/abap2UI5) core at runtime.
 
 The default branch is **`standard`**, not `main`. The `cloud` branch is an
-unmaintained prototype from 2025-11: it has no CI and builds on the frozen
-`z2ui5_cl_util_http` in the core's `src/99`.
+unmaintained prototype from 2025-11: it has no CI; like `standard` it goes
+through the core's `z2ui5_cl_ui5_util_http` (`factory_cloud`), nothing from
+the core's frozen `src/99`.
 
 ## Layout
 
