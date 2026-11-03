@@ -7,7 +7,7 @@ name: check-rename
 
 on:
   push:
-    branches: [main]
+    branches: [standard]
   pull_request:
 
 permissions:

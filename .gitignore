@@ -4,3 +4,7 @@ node_modules/
 .github/abaplint/rename_run.json
 .github/out/
 .unit/
+site/node_modules/
+site/.vitepress/cache/
+site/.vitepress/dist/
+build/

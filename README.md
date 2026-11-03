@@ -13,7 +13,7 @@ system, which forwards every request through an SM59 destination to the
 source system where the abap2UI5 apps run. For landscapes where users should
 reach the apps of another system through one entry point.
 
-> Part of [abap2UI5-addons](https://github.com/abap2UI5-addons) - addons and apps for [abap2UI5](https://github.com/abap2UI5/abap2UI5), installed with [abapGit](https://abapgit.org).
+> Part of [abap2UI5-addons](https://github.com/abap2UI5-addons) - addons and apps for [abap2UI5](https://github.com/abap2UI5/abap2UI5), installed with [abapGit](https://abapgit.org). Documentation: [abap2ui5-addons.github.io/http-connector](https://abap2ui5-addons.github.io/http-connector/).
 
 ```
 Browser ── GET/POST ──> Consumer System                    Source System
@@ -42,11 +42,11 @@ browser talks to and the **source system** the apps run on.
 
 - Standard ABAP 7.50 or higher on both systems
 - NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
-  `standard` on every push - pull abap2UI5 from their `702` branches as well
+  `standard` on every push - pull abap2UI5 from its `702` branch as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5) on both systems:
-  - **consumer system:** a release **newer than 1.146.0** - the connector
-    forwards the query string through `z2ui5_cl_ui5_util_http`, which learned
-    it after that release
+  - **consumer system:** **1.147.0 or newer** - the connector forwards the
+    query string through `z2ui5_cl_ui5_util_http`, which learned it in that
+    release
   - **source system:** **1.143.0 or newer** - the first release with
     `z2ui5_cl_ui5_http_handler`
 - On the consumer system: a destination in SM59 (type G or H) pointing to the
@@ -107,8 +107,10 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs exactly what CI runs: abaplint (`abap-standard.yaml`) and
-the abap2UI5-linter (`check-abap2ui5.yaml`).
+`npm run check` runs abaplint (`abap-standard.yaml`), the abap2UI5-linter
+(`check-abap2ui5.yaml`) and the namespace rename (`check-rename.yaml`).
+`npm run unit` runs the ABAP Unit tests (`abap-unit.yaml`) on abap2UI5's
+transpiled Node runtime.
 
 ## Contributing
 
