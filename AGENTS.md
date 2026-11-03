@@ -85,3 +85,27 @@ not verified in a system.
   which documentation files exist, commit style — live in
   [CONVENTIONS.md](https://github.com/abap2UI5/abap2UI5/blob/main/.github/shared/CONVENTIONS.md)
   and bind this repository too.
+
+## Namespace rename
+
+`npm run rename` (CI: `check-rename`) and the manual `build-rename` workflow
+are abap2UI5's namespace rename for this addon - `.github/scripts/rename.mjs`,
+the same file in every addon that has one. Every `z2ui5_` object becomes
+`<name>_...`, for a customer name such as `ZMYUI5` or a registered namespace
+such as `/CA2UI5/` (at most 6 characters), and so does every reference to
+abap2UI5 and to the addons this one builds on: the branch `rename_<name>` runs
+on an abap2UI5 renamed with the same name by its own `build-rename`. What
+follows from it:
+
+- Every object name has at most 25 characters (a transparent table
+  11, an ICF node 10) - 30 minus what the longest new name adds.
+- No literal names a `z2ui5_` object: the rename rewrites references, never a
+  literal. Derive the name - from a typed reference, or behind the prefix of
+  the class's own name.
+- A change that spans several repositories: `RENAME_DEPS_FROM=<dir> npm run
+  rename` takes the dependencies from the clones in `<dir>`.
+- The source side's ICF node `z2ui5_http_srv` has 14 characters, and an ICF
+  node at most 15 - so this addon allows names of at most 6 characters
+  (`config.renameMaxLength` in `package.json`): `ZMYUI5` fits, `/CA2UI5/`
+  does not. Shortening the node would move the URL every consumer system has
+  configured.

@@ -72,6 +72,16 @@ browser talks to and the **source system** the apps run on.
 **Start** - call the endpoint `.../sap/bc/z2ui5_http` of the **consumer
 system** in your browser.
 
+### Parallel installation (namespace rename)
+
+To run a second copy next to the original in the same system, rename it the
+way abap2UI5 itself is renamed: run the workflow **build-rename** (Actions →
+build-rename → Run workflow) with the name your abap2UI5 installation was
+renamed to - e.g. `ZMYUI5` (at most 6 characters here - the ICF node `z2ui5_http_srv` has to stay within 15). It pushes the branch `rename_<name>`, in
+which every object and every reference to abap2UI5 and to the addons this one
+needs carries that name; pull it with abapGit. Rename abap2UI5 and every addon
+of the installation with the same name.
+
 ## Usage
 
 ### Approach
