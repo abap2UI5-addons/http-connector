@@ -9,6 +9,15 @@
       "files": "/src/**/*.*"
     },
     {
+      // abaplint/deps has no ABAP Unit API - the test class needs
+      // cl_abap_unit_assert. Not from steampunk-2305-api-intersect-702: the
+      // core lints with that one, and the rename takes the first entry of a
+      // URL, so these two files would hide the rest of it there
+      "url": "https://github.com/abapedia/steampunk-2305-api",
+      "folder": "/aunit",
+      "files": "/src/{cl_abap_unit_assert.clas,if_aunit_constants.intf}.abap"
+    },
+    {
       // the downported abap2UI5 (branch 702 is generated from main)
       "url": "https://github.com/abap2UI5/abap2UI5",
       "branch": "702",

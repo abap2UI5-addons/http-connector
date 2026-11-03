@@ -38,9 +38,9 @@ The connector calls:
 | --- | --- | --- |
 | `z2ui5_cl_ui5_http_handler=>run` | `src/02` | released; the source side is nothing more than this call |
 | `z2ui5_cl_ui5_http_handler=>_check_csrf_rejected` | `src/02` | released |
-| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below. The `query` of both is newer than 1.146.0 |
+| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below. The `query` of both is new in 1.147.0 |
 
-The consumer needs an abap2UI5 release newer than 1.146.0 (the query of
+The consumer needs abap2UI5 1.147.0 or newer (the query of
 `z2ui5_cl_ui5_util_http`), the source 1.143.0 or newer (the first release with
 `z2ui5_cl_ui5_http_handler`).
 
@@ -65,8 +65,10 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs exactly what CI runs: abaplint (`abap-standard.yaml`) and
-the abap2UI5-linter (`check-abap2ui5.yaml`). This repository builds no view, so
+`npm run check` runs abaplint (`abap-standard.yaml`), the abap2UI5-linter
+(`check-abap2ui5.yaml`) and the namespace rename (`check-rename.yaml`). CI
+also runs the ABAP Unit tests (`abap-unit.yaml`) - locally that is
+`npm run unit`, see below. This repository builds no view, so
 the linter runs with `allClasses` and without the render gate; what it adds is
 the released-API check.
 
@@ -112,4 +114,10 @@ follows from it:
 
 ## Unit tests
 
-CI `abap-unit` runs the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main`, downports, transpiles and runs the tests of this repository's classes
+CI `abap-unit` runs the ABAP Unit tests on abap2UI5's transpiled Node
+runtime, the way abap2UI5 tests itself: `npm run unit`
+(`.github/scripts/unit.mjs`) copies the packages into a checkout of
+abap2UI5's `main`, downports, transpiles and runs the tests of the classes
+starting with `z2ui5_cl_http_con`. It fails when no test ran. The tests cover
+what runs without a system - today `get_content_type` of the consumer handler;
+the HTTP call itself stays untested offline.

@@ -9,12 +9,14 @@ Run what CI runs:
 ```sh
 npm ci
 npm run check
+npm run unit
 ```
 
-`npm run check` is the same set of steps the workflows run on a pull request,
-so a green run locally is a green run there. `npm test` is an alias for it —
-this repository has no separate unit-test suite; its ABAP is checked, not
-executed.
+`npm run check` runs lint, the abap2UI5-linter and the rename - the steps of
+`abap-standard`, `check-abap2ui5` and `check-rename`. `npm test` is an alias
+for it. `npm run unit` is the `abap-unit` workflow: it clones abap2UI5 into
+`.unit/`, transpiles and runs the ABAP Unit tests, so it is slower and kept
+out of `check`.
 
 ## What the gates are
 
@@ -22,6 +24,8 @@ executed.
 | --- | --- |
 | `npm run lint` | abaplint: syntax, resolved against the abap2UI5 core |
 | `npm run check:abap2ui5` | [abap2UI5-linter](https://github.com/abap2UI5/linter), source-side rules only (there is no view here): abapGit round trip, activation, and that the connector names no unreleased core object beyond the one it uses on purpose |
+| `npm run rename` | the namespace rename still applies cleanly (`.github/scripts/rename.mjs`) |
+| `npm run unit` | the ABAP Unit tests pass on abap2UI5's transpiled Node runtime (`.github/scripts/unit.mjs`) |
 
 The abap2UI5-linter keeps a baseline in `abap2ui5lint-baseline.json`. Findings
 recorded there are counted and never listed; a **new** finding fails the gate,
@@ -32,7 +36,7 @@ shrinks — fix something, then refresh it with:
 npx abap2ui5lint --update-baseline
 ```
 
-Neither gate can call a destination. Say in the pull request whether the change
+No gate can call a destination. Say in the pull request whether the change
 was tried between two systems.
 
 ## Conventions

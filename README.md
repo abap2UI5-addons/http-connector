@@ -44,9 +44,9 @@ browser talks to and the **source system** the apps run on.
 - NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
   `standard` on every push - pull abap2UI5 from their `702` branches as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5) on both systems:
-  - **consumer system:** a release **newer than 1.146.0** - the connector
-    forwards the query string through `z2ui5_cl_ui5_util_http`, which learned
-    it after that release
+  - **consumer system:** **1.147.0 or newer** - the connector forwards the
+    query string through `z2ui5_cl_ui5_util_http`, which learned it in that
+    release
   - **source system:** **1.143.0 or newer** - the first release with
     `z2ui5_cl_ui5_http_handler`
 - On the consumer system: a destination in SM59 (type G or H) pointing to the
@@ -107,8 +107,10 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs exactly what CI runs: abaplint (`abap-standard.yaml`) and
-the abap2UI5-linter (`check-abap2ui5.yaml`).
+`npm run check` runs abaplint (`abap-standard.yaml`), the abap2UI5-linter
+(`check-abap2ui5.yaml`) and the namespace rename (`check-rename.yaml`).
+`npm run unit` runs the ABAP Unit tests (`abap-unit.yaml`) on abap2UI5's
+transpiled Node runtime.
 
 ## Contributing
 

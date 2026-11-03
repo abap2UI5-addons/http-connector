@@ -40,7 +40,7 @@ const WORK = path.resolve(ROOT, process.env.UNIT_DIR || ".unit");
 
 const CONFIG = {
   // the test classes of this repository
-  prefix: "Z2UI5_CL_HTTP",
+  prefix: "Z2UI5_CL_HTTP_CON",
   // checkouts under WORK; the first one is the abap2UI5 tree everything is
   // built in, the others are what this repository builds on
   repos: [
