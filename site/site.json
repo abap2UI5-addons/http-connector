@@ -1,0 +1,6 @@
+{
+  "repo": "http-connector",
+  "title": "HTTP Connector",
+  "description": "Call abap2UI5 apps on another system via HTTP.",
+  "branch": "standard"
+}
