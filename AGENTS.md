@@ -109,3 +109,7 @@ follows from it:
   (`config.renameMaxLength` in `package.json`): `ZMYUI5` fits, `/CA2UI5/`
   does not. Shortening the node would move the URL every consumer system has
   configured.
+
+## Unit tests
+
+CI `abap-unit` runs the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main`, downports, transpiles and runs the tests of this repository's classes

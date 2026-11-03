@@ -3,3 +3,4 @@ node_modules/
 .github/abaplint/rename-deps/
 .github/abaplint/rename_run.json
 .github/out/
+.unit/
