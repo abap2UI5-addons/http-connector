@@ -8,7 +8,7 @@ CLASS z2ui5_cl_http_con_handler DEFINITION
 
     " replace with your SM59 destination (type G/H) pointing to the source system
     CONSTANTS c_destination TYPE string VALUE `NONE`.
-    " alternatively forward directly to an url (only used when c_destination is `NONE`)
+    " alternatively forward directly to a URL (only used when c_destination is `NONE`)
     CONSTANTS c_url TYPE string VALUE ``.
     " The consumer node is the endpoint the browser talks to, so the CSRF gate
     " of the framework has to run here - the source system only ever sees the

@@ -28,11 +28,11 @@ features:
 
 ## What it does
 
-The browser talks to a consumer system, which forwards each abap2UI5 roundtrip through an SM59 destination to the source system where the abap2UI5 apps run. The apps stay where they are and run unchanged. It is for landscapes where users should reach the apps of another system through one entry point, and follows the same approach as the rfc-connector with an HTTP connection instead of RFC.
+The browser talks to a consumer system, which forwards each abap2UI5 roundtrip through an SM59 destination to the source system where the abap2UI5 apps run. The apps stay where they are and run unchanged. It is for landscapes where users should reach the apps of another system through one entry point, and follows the same approach as the [rfc-connector](https://github.com/abap2UI5-addons/rfc-connector) with an HTTP connection instead of RFC.
 
 ## Requirements
 
-- Standard ABAP 7.50 or higher on both systems
+- Standard ABAP 7.50 or higher on both systems; NetWeaver 7.02 - 7.40 through the downported branch 702
 - abap2UI5 on both systems: consumer 1.147.0 or newer, source 1.143.0 or newer
 - ABAP Cloud: only an unmaintained prototype branch cloud (consumer side, no CI)
 - SM59 destination (type G or H) on the consumer system with path prefix /sap/bc/z2ui5_http_srv/ and login data
@@ -54,5 +54,6 @@ The [Guide](/guide) shows how it is used.
 
 ## Links
 
-- [rfc-connector](https://github.com/abap2UI5-addons/rfc-connector)
+- [rfc-connector](https://github.com/abap2UI5-addons/rfc-connector) - the same approach over RFC
+- [abap2UI5](https://github.com/abap2UI5/abap2UI5)
 - [The repository](https://github.com/abap2UI5-addons/http-connector) - issues and pull requests welcome
