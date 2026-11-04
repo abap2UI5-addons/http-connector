@@ -43,8 +43,12 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
     DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
 
-    DATA(lo_server) = z2ui5_cl_ui5_util_http=>factory( server ).
-    DATA(ls_req) = lo_server->get_req_info( ).
+    DATA lo_server TYPE REF TO z2ui5_cl_ui5_util_http.
+    DATA ls_req TYPE z2ui5_cl_ui5_util_http=>ty_s_http_req.
+          DATA lx TYPE REF TO cx_root.
+    lo_server = z2ui5_cl_ui5_util_http=>factory( server ).
+
+    ls_req = lo_server->get_req_info( ).
 
     IF ls_req-method = `POST`
        AND z2ui5_cl_ui5_http_handler=>_check_csrf_rejected(
@@ -53,9 +57,10 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
                referer = lo_server->get_header_field( `referer` )
                host    = lo_server->get_header_field( `host` ) ) = abap_true.
 
-      ls_res = VALUE #( body          = `CSRF validation failed - cross-origin POST rejected`
-                        status_code   = 403
-                        status_reason = `Forbidden` ).
+      CLEAR ls_res.
+      ls_res-body = `CSRF validation failed - cross-origin POST rejected`.
+      ls_res-status_code = 403.
+      ls_res-status_reason = `Forbidden`.
 
     ELSE.
 
@@ -72,20 +77,23 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
           " a response without a status line would go out as status 0, which the
           " browser reports as a network error without any readable reason
           IF ls_res-status_code IS INITIAL.
-            ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`
-                              status_code   = 502
-                              status_reason = `Bad Gateway` ).
+            CLEAR ls_res.
+            ls_res-body = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`.
+            ls_res-status_code = 502.
+            ls_res-status_reason = `Bad Gateway`.
           ENDIF.
 
-        CATCH cx_root INTO DATA(lx).
+
+        CATCH cx_root INTO lx.
           " The call never reached the source system: destination not maintained
           " or not authorized, host unreachable, timeout. The frontend renders
           " the body of every non-2xx response in its error overlay, so the
           " reason has to travel in it - an uncaught exception here would end in
           " the ICF 500 page, which suppresses exactly that text.
-          ls_res = VALUE #( body          = |HTTP_CONNECTOR_ERROR - { lx->get_text( ) }|
-                            status_code   = 502
-                            status_reason = `Bad Gateway` ).
+          CLEAR ls_res.
+          ls_res-body = |HTTP_CONNECTOR_ERROR - { lx->get_text( ) }|.
+          ls_res-status_code = 502.
+          ls_res-status_reason = `Bad Gateway`.
       ENDTRY.
 
     ENDIF.
@@ -103,9 +111,15 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
   METHOD get_content_type.
 
-    result = COND #( WHEN status_code >= 400 THEN `text/plain; charset=UTF-8`
-                     WHEN method = `GET`     THEN `text/html; charset=UTF-8`
-                     ELSE `application/json; charset=UTF-8` ).
+    DATA temp1 TYPE string.
+    IF status_code >= 400.
+      temp1 = `text/plain; charset=UTF-8`.
+    ELSEIF method = `GET`.
+      temp1 = `text/html; charset=UTF-8`.
+    ELSE.
+      temp1 = `application/json; charset=UTF-8`.
+    ENDIF.
+    result = temp1.
 
   ENDMETHOD.
 
