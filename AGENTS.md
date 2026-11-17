@@ -28,7 +28,7 @@ the core's frozen `src/99`.
 ## What this depends on in the core
 
 There is no version pin on the core — abaplint resolves it from its `main`
-branch. That is why both workflows also run on a weekly schedule: a rename
+branch. That is why `ci` also runs on a weekly schedule: a rename
 upstream breaks this repository silently, and with no pull request open nothing
 else would notice.
 
@@ -65,12 +65,39 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs abaplint (`abap-standard.yaml`), the abap2UI5-linter
-(`check-abap2ui5.yaml`) and the namespace rename (`check-rename.yaml`). CI
-also runs the ABAP Unit tests (`abap-unit.yaml`) - locally that is
-`npm run unit`, see below. This repository builds no view, so
+`npm run check` runs abaplint, the abap2UI5-linter and the namespace rename.
+CI also runs the ABAP Unit tests - locally that is `npm run unit`, see below. This repository builds no view, so
 the linter runs with `allClasses` and without the render gate; what it adds is
 the released-API check.
+
+## CI
+
+CI comes from the shared CI template of abap2UI5-addons (reusable workflows in
+[rap-ext](https://github.com/abap2UI5-addons/rap-ext/blob/main/.github/ci/README.md),
+pinned by commit in the `uses:` lines and moved by `bump-deps`), triggered
+from `standard`:
+
+* `ci` - on every push to `standard`, every pull request, weekly and by
+  hand, one job per check: `check / abaplint (./abaplint.jsonc)`,
+  `check / unit`, `check / rename` and `check / abap2ui5lint` (render gate
+  off - no views here). These are the required status checks of the branch
+  protection.
+* `ci-702` - on every push to `standard` `npm run auto_downport`, a
+  force-push to the branch `702`, then abaplint on that branch
+  (`.github/abaplint/abap_702.jsonc`). Never commit to `702` by hand.
+* `build-rename` (manual, at most 6 characters), `bump-deps` (monthly; the
+  template pin moves only with the `DEPS_TOKEN` secret).
+* `deploy-pages` - **not** from the template: `addon-pages.yaml` of
+  ci-v1.0.0 deploys only from `refs/heads/main`, and this repository's
+  default branch is `standard`. It stays this repository's own workflow until
+  the template takes the branch.
+
+**No ABAP Cloud lint, on purpose.** Both ICF handlers implement
+`if_http_extension` (the classic ICF), which ABAP Cloud does not have -
+abaplint for Cloud reports 6 issues, all of them that interface. An ABAP
+Cloud connector is a different class (`if_http_service_extension`), not a
+small fix; the unmaintained `cloud` branch is that prototype. No
+`.github/deps.json`: the connector builds on no sibling addon.
 
 Nothing offline can prove the outbound HTTP call, the SICF nodes or the round
 trip through a real destination. State in the pull request what was and was
@@ -90,7 +117,7 @@ not verified in a system.
 
 ## Namespace rename
 
-`npm run rename` (CI: `check-rename`) and the manual `build-rename` workflow
+`npm run rename` (CI: the `rename` job of `ci`) and the manual `build-rename` workflow
 are abap2UI5's namespace rename for this addon - `.github/scripts/rename.mjs`,
 the same file in every addon that has one. Every `z2ui5_` object becomes
 `<name>_...`, for a customer name such as `ZMYUI5` or a registered namespace
@@ -114,7 +141,7 @@ follows from it:
 
 ## Unit tests
 
-CI `abap-unit` runs the ABAP Unit tests on abap2UI5's transpiled Node
+CI (the `unit` job of `ci`) runs the ABAP Unit tests on abap2UI5's transpiled Node
 runtime, the way abap2UI5 tests itself: `npm run unit`
 (`.github/scripts/unit.mjs`) copies the packages into a checkout of
 abap2UI5's `main`, downports, transpiles and runs the tests of the classes

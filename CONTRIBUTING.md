@@ -12,9 +12,9 @@ npm run check
 npm run unit
 ```
 
-`npm run check` runs lint, the abap2UI5-linter and the rename - the steps of
-`abap-standard`, `check-abap2ui5` and `check-rename`. `npm test` is an alias
-for it. `npm run unit` is the `abap-unit` workflow: it clones abap2UI5 into
+`npm run check` runs lint, the abap2UI5-linter and the rename - the
+`abaplint`, `abap2ui5lint` and `rename` jobs of the `ci` workflow. `npm test`
+is an alias for it. `npm run unit` is its `unit` job: it clones abap2UI5 into
 `.unit/`, transpiles and runs the ABAP Unit tests, so it is slower and kept
 out of `check`.
 
