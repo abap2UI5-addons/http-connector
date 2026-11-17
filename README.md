@@ -5,8 +5,8 @@
 [![abap2UI5](https://img.shields.io/badge/requires-abap2UI5-blue)](https://github.com/abap2UI5/abap2UI5)
 [![License](https://img.shields.io/github/license/abap2UI5-addons/http-connector)](LICENSE)
 <br>
-[![ABAP Standard](https://img.shields.io/github/actions/workflow/status/abap2UI5-addons/http-connector/abap-standard.yaml?branch=standard&label=ABAP%20Standard)](https://github.com/abap2UI5-addons/http-connector/actions/workflows/abap-standard.yaml)
-[![check-abap2UI5](https://img.shields.io/github/actions/workflow/status/abap2UI5-addons/http-connector/check-abap2ui5.yaml?branch=standard&label=check-abap2UI5)](https://github.com/abap2UI5-addons/http-connector/actions/workflows/check-abap2ui5.yaml)
+[![CI](https://img.shields.io/github/actions/workflow/status/abap2UI5-addons/http-connector/ci.yaml?branch=standard&label=CI)](https://github.com/abap2UI5-addons/http-connector/actions/workflows/ci.yaml)
+[![ABAP 7.02](https://img.shields.io/github/actions/workflow/status/abap2UI5-addons/http-connector/ci-702.yaml?branch=standard&label=ABAP%207.02)](https://github.com/abap2UI5-addons/http-connector/actions/workflows/ci-702.yaml)
 
 **Remotely call abap2UI5 apps via HTTP.** The browser talks to a consumer
 system, which forwards every request through an SM59 destination to the
@@ -107,10 +107,10 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs abaplint (`abap-standard.yaml`), the abap2UI5-linter
-(`check-abap2ui5.yaml`) and the namespace rename (`check-rename.yaml`).
-`npm run unit` runs the ABAP Unit tests (`abap-unit.yaml`) on abap2UI5's
-transpiled Node runtime.
+`npm run check` runs abaplint, the abap2UI5-linter and the namespace rename;
+`npm run unit` runs the ABAP Unit tests on abap2UI5's transpiled Node
+runtime - each a job of the `ci` workflow (`ci.yaml`, from the shared CI
+template of abap2UI5-addons).
 
 ## Contributing
 
