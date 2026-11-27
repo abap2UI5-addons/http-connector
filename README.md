@@ -99,6 +99,7 @@ the response. All abap2UI5 apps run on the source system.
 
 * **Stateless apps only.** A stateful app (`client->set_session_stateful( )`) needs the ICF session of the system the app runs on; the consumer opens a new HTTP connection per request and does not forward the `sap-contextid` header the frontend uses to address that session. Apps keeping their state in the draft table — the abap2UI5 default — work unchanged.
 * **The consumer forwards method, body, query string and status — not headers, and not its path.** Everything abap2UI5 needs for a roundtrip travels in the body and the query; a request header an app reads through the user exit on the source system does not, and the exit sees the path of the source node `/sap/bc/z2ui5_http_srv`.
+* **Response headers are the consumer's own.** Only body and status come back from the source system, so the consumer sets the response headers the way abap2UI5 does by default: the content type (page, bundle, JSON roundtrip, plain-text error), the cache policy (the page and the bundles revalidated, everything else `no-store`) and the default security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Resource-Policy`). Security headers a user exit adds on the source system do not reach the browser - change them in `Z2UI5_CL_HTTP_CON_HANDLER` (`get_security_headers`) as well - and the page and the bundles have no ETag, so a reload fetches them again instead of getting a 304.
 
 ## Development
 

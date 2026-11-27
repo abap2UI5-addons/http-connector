@@ -149,5 +149,6 @@ runtime, the way abap2UI5 tests itself: `npm run unit`
 (`.github/scripts/unit.mjs`) copies the packages into a checkout of
 abap2UI5's `main`, downports, transpiles and runs the tests of the classes
 starting with `z2ui5_cl_http_con`. It fails when no test ran. The tests cover
-what runs without a system - today `get_content_type` of the consumer handler;
+what runs without a system - today `get_content_type` and `get_header_fields`
+of the consumer handler;
 the HTTP call itself stays untested offline.
