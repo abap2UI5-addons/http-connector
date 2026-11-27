@@ -50,8 +50,8 @@ browser talks to and the **source system** the apps run on.
   - **source system:** **1.143.0 or newer** - the first release with
     `z2ui5_cl_ui5_http_handler`
 - On the consumer system: a destination in SM59 (type G or H) pointing to the
-  source system with path prefix `/sap/bc/z2ui5_http_srv/` and login data
-  maintained
+  source system with path prefix `/sap/bc/z2ui5_http_srv/` and a logon that
+  **propagates the calling user** - see [User propagation](#user-propagation)
 
 **Steps** - with [abapGit](https://abapgit.org):
 
@@ -71,6 +71,22 @@ browser talks to and the **source system** the apps run on.
 
 **Start** - call the endpoint `.../sap/bc/z2ui5_http` of the **consumer
 system** in your browser.
+
+### User propagation
+
+The apps run on the source system as whatever user the destination logs on
+with. Configure it to log on as **the user who is calling** the consumer
+system: in SM59 *Logon & Security*, logon with an SAP assertion ticket
+("Send SAP Logon Ticket" / current user, with the two systems trusting each
+other in STRUSTSSO2), or principal propagation / SSO where your landscape
+provides it.
+
+**Never a fixed technical user.** With user and password maintained in the
+destination every browser user runs every app as that one user on the
+source system: its authorizations apply to everyone, `sy-uname` is the same
+for all, and abap2UI5 binds a draft to the user who created it - with one
+user for all of them that binding is gone, and any user can resume another
+user's draft.
 
 ### Parallel installation (namespace rename)
 
