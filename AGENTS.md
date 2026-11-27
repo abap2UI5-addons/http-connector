@@ -68,7 +68,7 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs abaplint, the abap2UI5-linter and the namespace rename.
+`npm run check` runs abaplint, the 7.02 downport (`check:702`), the abap2UI5-linter and the namespace rename.
 CI also runs the ABAP Unit tests - locally that is `npm run unit`, see below. This repository builds no view, so
 the linter runs with `allClasses` and without the render gate; what it adds is
 the released-API check.
@@ -84,8 +84,11 @@ from `standard`:
   hand, one job per check: `check / abaplint (./abaplint.jsonc)`,
   `check / unit`, `check / rename` and `check / abap2ui5lint` (render gate
   off - no views here). These are the required status checks of the branch
-  protection. The call passes `branch: standard`, the branch the template
-  publishes badges from.
+  protection. Also `check / npm run check:702`, the 7.02 gate of a pull
+  request (`.github/scripts/check-702.sh` downports a scratch copy of `src/`
+  in `build/702` and lints it with `.github/abaplint/abap_702.jsonc`; `src/`
+  is never rewritten). The call passes `branch: standard`, the branch the
+  template publishes badges from.
 * `ci-702` - on every push to `standard` `npm run auto_downport`, a
   force-push to the branch `702`, then abaplint on that branch
   (`.github/abaplint/abap_702.jsonc`). Never commit to `702` by hand.
