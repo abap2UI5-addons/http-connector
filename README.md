@@ -133,7 +133,7 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs abaplint, the abap2UI5-linter and the namespace rename;
+`npm run check` runs abaplint, the 7.02 downport, the abap2UI5-linter and the namespace rename;
 `npm run unit` runs the ABAP Unit tests on abap2UI5's transpiled Node
 runtime - each a job of the `ci` workflow (`ci.yaml`, from the shared CI
 template of abap2UI5-addons).

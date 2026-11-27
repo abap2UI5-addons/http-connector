@@ -12,8 +12,9 @@ npm run check
 npm run unit
 ```
 
-`npm run check` runs lint, the abap2UI5-linter and the rename - the
-`abaplint`, `abap2ui5lint` and `rename` jobs of the `ci` workflow. `npm test`
+`npm run check` runs lint, the 7.02 downport, the abap2UI5-linter and the
+rename - the `abaplint`, `npm run check:702`, `abap2ui5lint` and `rename` jobs
+of the `ci` workflow. `npm test`
 is an alias for it. `npm run unit` is its `unit` job: it clones abap2UI5 into
 `.unit/`, transpiles and runs the ABAP Unit tests, so it is slower and kept
 out of `check`.
@@ -23,6 +24,7 @@ out of `check`.
 | Gate | What it proves |
 | --- | --- |
 | `npm run lint` | abaplint: syntax, resolved against the abap2UI5 core |
+| `npm run check:702` | the 7.02 downport: a scratch copy of `src/` in `build/702`, downported and linted with `.github/abaplint/abap_702.jsonc` (`.github/scripts/check-702.sh`) - `src/` is never rewritten |
 | `npm run check:abap2ui5` | [abap2UI5-linter](https://github.com/abap2UI5/linter), source-side rules only (there is no view here): abapGit round trip, activation, and that the connector names no unreleased core object beyond the one it uses on purpose |
 | `npm run rename` | the namespace rename still applies cleanly (`.github/scripts/rename.mjs`) |
 | `npm run unit` | the ABAP Unit tests pass on abap2UI5's transpiled Node runtime (`.github/scripts/unit.mjs`) |
