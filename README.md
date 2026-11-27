@@ -44,14 +44,14 @@ browser talks to and the **source system** the apps run on.
 - NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
   `standard` on every push - pull abap2UI5 from its `702` branch as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5) on both systems:
-  - **consumer system:** **1.147.0 or newer** - the connector forwards the
-    query string through `z2ui5_cl_ui5_util_http`, which learned it in that
-    release
+  - **consumer system:** **1.149.0 or newer** - the connector forwards the
+    query string and sends the request body as UTF-8 JSON through
+    `z2ui5_cl_ui5_util_http=>client_request`, which that release added
   - **source system:** **1.143.0 or newer** - the first release with
     `z2ui5_cl_ui5_http_handler`
 - On the consumer system: a destination in SM59 (type G or H) pointing to the
-  source system with path prefix `/sap/bc/z2ui5_http_srv/` and login data
-  maintained
+  source system with path prefix `/sap/bc/z2ui5_http_srv/` and a logon that
+  **propagates the calling user** - see [User propagation](#user-propagation)
 
 **Steps** - with [abapGit](https://abapgit.org):
 
@@ -71,6 +71,22 @@ browser talks to and the **source system** the apps run on.
 
 **Start** - call the endpoint `.../sap/bc/z2ui5_http` of the **consumer
 system** in your browser.
+
+### User propagation
+
+The apps run on the source system as whatever user the destination logs on
+with. Configure it to log on as **the user who is calling** the consumer
+system: in SM59 *Logon & Security*, logon with an SAP assertion ticket
+("Send SAP Logon Ticket" / current user, with the two systems trusting each
+other in STRUSTSSO2), or principal propagation / SSO where your landscape
+provides it.
+
+**Never a fixed technical user.** With user and password maintained in the
+destination every browser user runs every app as that one user on the
+source system: its authorizations apply to everyone, `sy-uname` is the same
+for all, and abap2UI5 binds a draft to the user who created it - with one
+user for all of them that binding is gone, and any user can resume another
+user's draft.
 
 ### Parallel installation (namespace rename)
 
@@ -99,6 +115,16 @@ the response. All abap2UI5 apps run on the source system.
 
 * **Stateless apps only.** A stateful app (`client->set_session_stateful( )`) needs the ICF session of the system the app runs on; the consumer opens a new HTTP connection per request and does not forward the `sap-contextid` header the frontend uses to address that session. Apps keeping their state in the draft table — the abap2UI5 default — work unchanged.
 * **The consumer forwards method, body, query string and status — not headers, and not its path.** Everything abap2UI5 needs for a roundtrip travels in the body and the query; a request header an app reads through the user exit on the source system does not, and the exit sees the path of the source node `/sap/bc/z2ui5_http_srv`.
+* **Response headers are the consumer's own.** Only body and status come back from the source system, so the consumer sets the response headers the way abap2UI5 does by default: the content type (page, bundle, JSON roundtrip, plain-text error), the cache policy (the page and the bundles revalidated, everything else `no-store`) and the default security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Resource-Policy`). Security headers a user exit adds on the source system do not reach the browser - change them in `Z2UI5_CL_HTTP_CON_HANDLER` (`get_security_headers`) as well - and the page and the bundles have no ETag, so a reload fetches them again instead of getting a 304.
+
+### Troubleshooting
+
+`HTTP_CONNECTOR_ERROR - the source system could not be reached` (status 502)
+means the forwarded call failed before the source system answered:
+destination missing or not authorized, host unreachable, timeout. The text
+names no destination, host or user on purpose - every user can see it. Test
+the destination in SM59 (Connection Test) and look into the ICM trace (SMICM)
+of the consumer system for the reason.
 
 ## Development
 

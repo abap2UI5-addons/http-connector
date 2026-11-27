@@ -38,11 +38,12 @@ The connector calls:
 | --- | --- | --- |
 | `z2ui5_cl_ui5_http_handler=>run` | `src/02` | released; the source side is nothing more than this call |
 | `z2ui5_cl_ui5_http_handler=>_check_csrf_rejected` | `src/02` | released |
-| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_call` | `src/00/03` | not released — used **on purpose**, see below. The `query` of both is new in 1.147.0 |
+| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_request` | `src/00/03` | not released — used **on purpose**, see below. The `query` of `get_req_info` is new in 1.147.0, `client_request` in 1.149.0 |
 
-The consumer needs abap2UI5 1.147.0 or newer (the query of
-`z2ui5_cl_ui5_util_http`), the source 1.143.0 or newer (the first release with
-`z2ui5_cl_ui5_http_handler`).
+The consumer needs abap2UI5 1.149.0 or newer (`client_request` of
+`z2ui5_cl_ui5_util_http`, which carries request header fields - the POST body
+goes out as `application/json; charset=utf-8`), the
+source 1.143.0 or newer (the first release with `z2ui5_cl_ui5_http_handler`).
 
 ### z2ui5_cl_ui5_util_http stays
 
@@ -55,8 +56,10 @@ the utility does not offer, extend `z2ui5_cl_ui5_util_http` in the core
 kernel calls in this repository. The finding is accepted in
 `abap2ui5lint-baseline.json`; the price is that a rename of that class in the
 core breaks this repository, which the weekly scheduled run exists to notice.
-The core comments `client_call` as having no caller — this repository is the
-caller, so a core change that drops it has to be answered here.
+The core comments `client_call` as the method this repository calls; it
+calls `client_request` now (the general form `client_call` wraps), because
+only that one carries request header fields. A core change that drops or
+narrows `client_request` has to be answered here.
 
 ## Build and verify
 
@@ -146,5 +149,6 @@ runtime, the way abap2UI5 tests itself: `npm run unit`
 (`.github/scripts/unit.mjs`) copies the packages into a checkout of
 abap2UI5's `main`, downports, transpiles and runs the tests of the classes
 starting with `z2ui5_cl_http_con`. It fails when no test ran. The tests cover
-what runs without a system - today `get_content_type` of the consumer handler;
+what runs without a system - today `get_content_type` and `get_header_fields`
+of the consumer handler;
 the HTTP call itself stays untested offline.

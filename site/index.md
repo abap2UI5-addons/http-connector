@@ -33,9 +33,9 @@ The browser talks to a consumer system, which forwards each abap2UI5 roundtrip t
 ## Requirements
 
 - Standard ABAP 7.50 or higher on both systems; NetWeaver 7.02 - 7.40 through the downported branch 702
-- abap2UI5 on both systems: consumer 1.147.0 or newer, source 1.143.0 or newer
+- abap2UI5 on both systems: consumer 1.149.0 or newer, source 1.143.0 or newer
 - ABAP Cloud: only an unmaintained prototype branch cloud (consumer side, no CI)
-- SM59 destination (type G or H) on the consumer system with path prefix /sap/bc/z2ui5_http_srv/ and login data
+- SM59 destination (type G or H) on the consumer system with path prefix /sap/bc/z2ui5_http_srv/ and a logon that propagates the calling user (SAP logon ticket or SSO) - never a fixed technical user
 
 ## Installation
 
