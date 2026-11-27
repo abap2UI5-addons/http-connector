@@ -14,6 +14,7 @@ CLASS ltcl_test DEFINITION FINAL
     METHODS test_get_revalidated FOR TESTING RAISING cx_static_check.
     METHODS test_error_no_store  FOR TESTING RAISING cx_static_check.
     METHODS test_security_header FOR TESTING RAISING cx_static_check.
+    METHODS test_timeout_is_504  FOR TESTING RAISING cx_static_check.
 
     "! the value of header field name in the headers of a response, or
     "! `MISSING` when the response has no such field
@@ -161,6 +162,25 @@ CLASS ltcl_test IMPLEMENTATION.
         act = header_value( method      = `GET`
                             status_code = 502
                             name        = `X-Frame-Options` ) ).
+
+  ENDMETHOD.
+
+  METHOD test_timeout_is_504.
+
+    " a timeout reached the source system - the action may have run there
+    DATA(ls_res) = z2ui5_cl_http_con_handler=>get_error_response(
+                       `HTTP_COMMUNICATION_ERROR - ICM_HTTP_TIMEOUT: Connection timed out` ).
+    cl_abap_unit_assert=>assert_equals( exp = 504
+                                        act = ls_res-status_code ).
+    cl_abap_unit_assert=>assert_char_cp( exp = `*did not answer in time*may have been carried out*`
+                                         act = ls_res-body ).
+
+    " anything else never got there
+    ls_res = z2ui5_cl_http_con_handler=>get_error_response( `HTTP_COMMUNICATION_ERROR - connection refused` ).
+    cl_abap_unit_assert=>assert_equals( exp = 502
+                                        act = ls_res-status_code ).
+    cl_abap_unit_assert=>assert_char_cp( exp = `*could not be reached`
+                                         act = ls_res-body ).
 
   ENDMETHOD.
 

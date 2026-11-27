@@ -55,6 +55,17 @@ CLASS z2ui5_cl_http_con_handler DEFINITION
       RETURNING
         VALUE(result) TYPE string.
 
+    " The answer when the forwarded call failed. A timeout is told apart:
+    " the request reached the source system, which may have carried the
+    " action out (the app's main( ) ran, and committed) without answering in
+    " time - "could not be reached" invited the user to repeat it. The text
+    " names no destination, host or user: every user sees it.
+    CLASS-METHODS get_error_response
+      IMPORTING
+        error_text    TYPE string
+      RETURNING
+        VALUE(result) TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
+
     " The security headers every abap2UI5 response carries by default (the
     " t_security_header rows of the shipped user exit). A user exit of the
     " source system cannot reach the browser through the connector: a system
@@ -120,16 +131,13 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
                               status_reason = `Bad Gateway` ).
           ENDIF.
 
-        CATCH cx_root.
-          " The call never reached the source system: destination not maintained
-          " or not authorized, host unreachable, timeout. The frontend renders
+        CATCH cx_root INTO DATA(lx_call).
+          " The call failed: destination not maintained or not authorized,
+          " host unreachable - or no answer in time. The frontend renders
           " the body of every non-2xx response in its error overlay, so a body
           " has to be there - an uncaught exception would end in the ICF 500
-          " page. It names no destination, host or user: the overlay is shown
-          " to every user, the reason is for the administrator (SM59, SMICM).
-          ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system could not be reached`
-                            status_code   = 502
-                            status_reason = `Bad Gateway` ).
+          " page. The reason is for the administrator (SM59, SMICM).
+          ls_res = get_error_response( lx_call->get_text( ) ).
       ENDTRY.
 
     ENDIF.
@@ -182,6 +190,23 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
                      WHEN line_exists( t_params[ n = c_bundle_param ] ) "#EC CI_SORTSEQ
                                              THEN `application/javascript; charset=UTF-8`
                      ELSE `text/html; charset=UTF-8` ).
+
+  ENDMETHOD.
+
+  METHOD get_error_response.
+
+    " the text of the HTTP client's last error (HTTP_COMMUNICATION_ERROR -
+    " ..., cx_web_http_client_error) - CS ignores the case
+    IF error_text CS `timeout` OR error_text CS `timed out` OR error_text CS `time out`.
+      result = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system did not answer in time - ` &&
+                                        `the action may have been carried out there, check before you repeat it`
+                        status_code   = 504
+                        status_reason = `Gateway Timeout` ).
+    ELSE.
+      result = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system could not be reached`
+                        status_code   = 502
+                        status_reason = `Bad Gateway` ).
+    ENDIF.
 
   ENDMETHOD.
 

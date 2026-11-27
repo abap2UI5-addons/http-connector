@@ -121,10 +121,18 @@ the response. All abap2UI5 apps run on the source system.
 
 `HTTP_CONNECTOR_ERROR - the source system could not be reached` (status 502)
 means the forwarded call failed before the source system answered:
-destination missing or not authorized, host unreachable, timeout. The text
+destination missing or not authorized, host unreachable. The text
 names no destination, host or user on purpose - every user can see it. Test
 the destination in SM59 (Connection Test) and look into the ICM trace (SMICM)
 of the consumer system for the reason.
+
+`HTTP_CONNECTOR_ERROR - the source system did not answer in time - the action
+may have been carried out there, check before you repeat it` (status 504)
+means the call reached the source system and timed out waiting for the
+answer: the app's event may have run - and committed - there. Look at the
+data before the user repeats a posting. The time the consumer waits is the
+ICM default (`icm/server_port_<n>` `PROCTIMEOUT`, or the timeout of the SM59
+destination).
 
 ## Development
 
