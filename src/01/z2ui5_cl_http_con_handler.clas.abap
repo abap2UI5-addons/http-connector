@@ -42,6 +42,7 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
   METHOD if_http_extension~handle_request.
 
     DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
+    DATA ls_call TYPE z2ui5_cl_ui5_util_http=>ty_s_client_req.
 
     DATA(lo_server) = z2ui5_cl_ui5_util_http=>factory( server ).
     DATA(ls_req) = lo_server->get_req_info( ).
@@ -62,12 +63,25 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
       TRY.
           " the query goes along raw - ?z2ui5-bundle, app_start and every
           " other URL parameter reach the source system as the browser sent
-          " them. The path does not: the source answers on its own node
-          ls_res = z2ui5_cl_ui5_util_http=>client_call( method      = ls_req-method
-                                                        body        = ls_req-body
-                                                        destination = c_destination
-                                                        url         = c_url
-                                                        query       = ls_req-query ).
+          " them. The path does not: the source answers on its own node.
+          " A URL is used only without a destination; next to one it would
+          " be read as the path below it
+          ls_call = VALUE #( method      = ls_req-method
+                             body        = ls_req-body
+                             destination = c_destination
+                             query       = ls_req-query ).
+          IF c_destination IS INITIAL OR c_destination = `NONE`.
+            ls_call-url = c_url.
+          ENDIF.
+          " the roundtrip body is JSON and leaves this system as UTF-8 - without
+          " a charset the HTTP client and the source system's ICF fall back to
+          " ISO-8859-1, and every character outside Latin-1 the user typed was
+          " lost on the way
+          IF ls_call-body IS NOT INITIAL.
+            ls_call-t_header = VALUE #( ( n = `content-type`
+                                          v = `application/json; charset=utf-8` ) ).
+          ENDIF.
+          ls_res = z2ui5_cl_ui5_util_http=>client_request( ls_call ).
 
           " a response without a status line would go out as status 0, which the
           " browser reports as a network error without any readable reason
