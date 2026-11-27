@@ -33,10 +33,13 @@ CLASS ltcl_test IMPLEMENTATION.
 
   METHOD header_value.
 
-    DATA(lt_header) = z2ui5_cl_http_con_handler=>get_header_fields( method      = method
+    DATA lt_header TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA ls_header LIKE LINE OF lt_header.
+    lt_header = z2ui5_cl_http_con_handler=>get_header_fields( method      = method
                                                                     status_code = status_code ).
     result = `MISSING`.
-    LOOP AT lt_header INTO DATA(ls_header) WHERE n = name.
+
+    LOOP AT lt_header INTO ls_header WHERE n = name.
       result = ls_header-v.
     ENDLOOP.
 
@@ -58,6 +61,8 @@ CLASS ltcl_test IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD test_get_is_html.
+    DATA temp1 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp2 LIKE LINE OF temp1.
 
     cl_abap_unit_assert=>assert_equals(
         exp = `text/html; charset=UTF-8`
@@ -65,12 +70,18 @@ CLASS ltcl_test IMPLEMENTATION.
                                                            status_code = 200 ) ).
 
     " another URL parameter does not make the page a bundle
+
+    CLEAR temp1.
+
+    temp2-n = `app_start`.
+    temp2-v = `z2ui5_cl_app_hello_world`.
+    INSERT temp2 INTO TABLE temp1.
     cl_abap_unit_assert=>assert_equals(
         exp = `text/html; charset=UTF-8`
         act = z2ui5_cl_http_con_handler=>get_content_type(
                   method      = `GET`
                   status_code = 200
-                  t_params    = VALUE #( ( n = `app_start` v = `z2ui5_cl_app_hello_world` ) ) ) ).
+                  t_params    = temp1 ) ).
 
   ENDMETHOD.
 
@@ -86,28 +97,51 @@ CLASS ltcl_test IMPLEMENTATION.
   METHOD test_bundle_is_js.
 
     " ?z2ui5-bundle, with or without a value, answers a script, not the page
-    cl_abap_unit_assert=>assert_equals(
-        exp = `application/javascript; charset=UTF-8`
-        act = z2ui5_cl_http_con_handler=>get_content_type(
-                  method      = `GET`
-                  status_code = 200
-                  t_params    = VALUE #( ( n = `z2ui5-bundle` ) ) ) ).
+    DATA temp3 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp4 LIKE LINE OF temp3.
+    DATA temp5 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp6 LIKE LINE OF temp5.
+    DATA temp7 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp8 LIKE LINE OF temp7.
+    CLEAR temp3.
 
+    temp4-n = `z2ui5-bundle`.
+    INSERT temp4 INTO TABLE temp3.
     cl_abap_unit_assert=>assert_equals(
         exp = `application/javascript; charset=UTF-8`
         act = z2ui5_cl_http_con_handler=>get_content_type(
                   method      = `GET`
                   status_code = 200
-                  t_params    = VALUE #( ( n = `z2ui5-bundle` v = `cc` )
-                                         ( n = `z2ui5-version` v = `0123abcd` ) ) ) ).
+                  t_params    = temp3 ) ).
+
+
+    CLEAR temp5.
+
+    temp6-n = `z2ui5-bundle`.
+    temp6-v = `cc`.
+    INSERT temp6 INTO TABLE temp5.
+    temp6-n = `z2ui5-version`.
+    temp6-v = `0123abcd`.
+    INSERT temp6 INTO TABLE temp5.
+    cl_abap_unit_assert=>assert_equals(
+        exp = `application/javascript; charset=UTF-8`
+        act = z2ui5_cl_http_con_handler=>get_content_type(
+                  method      = `GET`
+                  status_code = 200
+                  t_params    = temp5 ) ).
 
     " a failed bundle request is still an error text
+
+    CLEAR temp7.
+
+    temp8-n = `z2ui5-bundle`.
+    INSERT temp8 INTO TABLE temp7.
     cl_abap_unit_assert=>assert_equals(
         exp = `text/plain; charset=UTF-8`
         act = z2ui5_cl_http_con_handler=>get_content_type(
                   method      = `GET`
                   status_code = 500
-                  t_params    = VALUE #( ( n = `z2ui5-bundle` ) ) ) ).
+                  t_params    = temp7 ) ).
 
   ENDMETHOD.
 
@@ -168,7 +202,8 @@ CLASS ltcl_test IMPLEMENTATION.
   METHOD test_timeout_is_504.
 
     " a timeout reached the source system - the action may have run there
-    DATA(ls_res) = z2ui5_cl_http_con_handler=>get_error_response(
+    DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
+    ls_res = z2ui5_cl_http_con_handler=>get_error_response(
                        `HTTP_COMMUNICATION_ERROR - ICM_HTTP_TIMEOUT: Connection timed out` ).
     cl_abap_unit_assert=>assert_equals( exp = 504
                                         act = ls_res-status_code ).

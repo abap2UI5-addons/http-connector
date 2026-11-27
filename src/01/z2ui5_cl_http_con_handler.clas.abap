@@ -84,8 +84,16 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
     DATA ls_call TYPE z2ui5_cl_ui5_util_http=>ty_s_client_req.
 
-    DATA(lo_server) = z2ui5_cl_ui5_util_http=>factory( server ).
-    DATA(ls_req) = lo_server->get_req_info( ).
+    DATA lo_server TYPE REF TO z2ui5_cl_ui5_util_http.
+    DATA ls_req TYPE z2ui5_cl_ui5_util_http=>ty_s_http_req.
+            DATA temp9 TYPE z2ui5_cl_ui5_util_context=>ty_t_name_value.
+            DATA temp10 LIKE LINE OF temp9.
+          DATA lx_call TYPE REF TO cx_root.
+    DATA temp11 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA ls_header LIKE LINE OF temp11.
+    lo_server = z2ui5_cl_ui5_util_http=>factory( server ).
+
+    ls_req = lo_server->get_req_info( ).
 
     IF ls_req-method = `POST`
        AND z2ui5_cl_ui5_http_handler=>_check_csrf_rejected(
@@ -94,9 +102,10 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
                referer = lo_server->get_header_field( `referer` )
                host    = lo_server->get_header_field( `host` ) ) = abap_true.
 
-      ls_res = VALUE #( body          = `CSRF validation failed - cross-origin POST rejected`
-                        status_code   = 403
-                        status_reason = `Forbidden` ).
+      CLEAR ls_res.
+      ls_res-body = `CSRF validation failed - cross-origin POST rejected`.
+      ls_res-status_code = 403.
+      ls_res-status_reason = `Forbidden`.
 
     ELSE.
 
@@ -106,10 +115,11 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
           " them. The path does not: the source answers on its own node.
           " A URL is used only without a destination; next to one it would
           " be read as the path below it
-          ls_call = VALUE #( method      = ls_req-method
-                             body        = ls_req-body
-                             destination = c_destination
-                             query       = ls_req-query ).
+          CLEAR ls_call.
+          ls_call-method = ls_req-method.
+          ls_call-body = ls_req-body.
+          ls_call-destination = c_destination.
+          ls_call-query = ls_req-query.
           IF c_destination IS INITIAL OR c_destination = `NONE`.
             ls_call-url = c_url.
           ENDIF.
@@ -118,20 +128,27 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
           " ISO-8859-1, and every character outside Latin-1 the user typed was
           " lost on the way
           IF ls_call-body IS NOT INITIAL.
-            ls_call-t_header = VALUE #( ( n = `content-type`
-                                          v = `application/json; charset=utf-8` ) ).
+
+            CLEAR temp9.
+
+            temp10-n = `content-type`.
+            temp10-v = `application/json; charset=utf-8`.
+            INSERT temp10 INTO TABLE temp9.
+            ls_call-t_header = temp9.
           ENDIF.
           ls_res = z2ui5_cl_ui5_util_http=>client_request( ls_call ).
 
           " a response without a status line would go out as status 0, which the
           " browser reports as a network error without any readable reason
           IF ls_res-status_code IS INITIAL.
-            ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`
-                              status_code   = 502
-                              status_reason = `Bad Gateway` ).
+            CLEAR ls_res.
+            ls_res-body = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`.
+            ls_res-status_code = 502.
+            ls_res-status_reason = `Bad Gateway`.
           ENDIF.
 
-        CATCH cx_root INTO DATA(lx_call).
+
+        CATCH cx_root INTO lx_call.
           " The call failed: destination not maintained or not authorized,
           " host unreachable - or no answer in time. The frontend renders
           " the body of every non-2xx response in its error overlay, so a body
@@ -143,9 +160,10 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     ENDIF.
 
     lo_server->set_cdata( ls_res-body ).
-    LOOP AT get_header_fields( method      = ls_req-method
-                               status_code = ls_res-status_code
-                               t_params    = ls_req-t_params ) INTO DATA(ls_header).
+
+    temp11 = get_header_fields( method = ls_req-method status_code = ls_res-status_code t_params = ls_req-t_params ).
+
+    LOOP AT temp11 INTO ls_header.
       lo_server->set_header_field( n = ls_header-n
                                    v = ls_header-v ).
     ENDLOOP.
@@ -156,25 +174,47 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
   METHOD get_header_fields.
 
-    result = VALUE #( ( n = `content-type`
-                        v = get_content_type( method      = method
-                                              status_code = status_code
-                                              t_params    = t_params ) ) ).
+    DATA temp12 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp13 LIKE LINE OF temp12.
+      DATA temp14 TYPE z2ui5_if_client=>ty_s_name_value.
+      DATA temp15 TYPE z2ui5_if_client=>ty_s_name_value.
+      DATA temp16 TYPE z2ui5_if_client=>ty_s_name_value.
+      DATA temp17 TYPE z2ui5_if_client=>ty_s_name_value.
+    CLEAR temp12.
+
+    temp13-n = `content-type`.
+    temp13-v = get_content_type( method = method
+status_code = status_code
+t_params = t_params ).
+    INSERT temp13 INTO TABLE temp12.
+    result = temp12.
 
     " The cache policy of the framework, per verb: the page and the bundles
     " carry no user or app data and may be stored, but are revalidated (with
     " no ETag to send, a revalidation is a full GET). Everything else - the
     " roundtrip data, an error, a HEAD - is never stored.
     IF method = `GET` AND status_code < 300.
-      INSERT VALUE #( n = `cache-control`
-                      v = `private, no-cache` ) INTO TABLE result.
+
+      CLEAR temp14.
+      temp14-n = `cache-control`.
+      temp14-v = `private, no-cache`.
+      INSERT temp14 INTO TABLE result.
     ELSE.
-      INSERT VALUE #( n = `cache-control`
-                      v = `no-cache, no-store, must-revalidate` ) INTO TABLE result.
-      INSERT VALUE #( n = `Pragma`
-                      v = `no-cache` ) INTO TABLE result.
-      INSERT VALUE #( n = `Expires`
-                      v = `0` ) INTO TABLE result.
+
+      CLEAR temp15.
+      temp15-n = `cache-control`.
+      temp15-v = `no-cache, no-store, must-revalidate`.
+      INSERT temp15 INTO TABLE result.
+
+      CLEAR temp16.
+      temp16-n = `Pragma`.
+      temp16-v = `no-cache`.
+      INSERT temp16 INTO TABLE result.
+
+      CLEAR temp17.
+      temp17-n = `Expires`.
+      temp17-v = `0`.
+      INSERT temp17 INTO TABLE result.
     ENDIF.
 
     INSERT LINES OF get_security_headers( ) INTO TABLE result.
@@ -185,11 +225,20 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
     " the names come lower-cased from the query parser - the framework's own
     " check of the bundle parameter reads them the same way
-    result = COND #( WHEN status_code >= 400 THEN `text/plain; charset=UTF-8`
-                     WHEN method <> `GET`    THEN `application/json; charset=UTF-8`
-                     WHEN line_exists( t_params[ n = c_bundle_param ] ) "#EC CI_SORTSEQ
-                                             THEN `application/javascript; charset=UTF-8`
-                     ELSE `text/html; charset=UTF-8` ).
+    DATA temp18 TYPE string.
+    DATA temp1 LIKE sy-subrc.
+    READ TABLE t_params WITH KEY n = c_bundle_param TRANSPORTING NO FIELDS.
+    temp1 = sy-subrc.
+    IF status_code >= 400.
+      temp18 = `text/plain; charset=UTF-8`.
+    ELSEIF method <> `GET`.
+      temp18 = `application/json; charset=UTF-8`.
+    ELSEIF temp1 = 0.
+      temp18 = `application/javascript; charset=UTF-8`.
+    ELSE.
+      temp18 = `text/html; charset=UTF-8`.
+    ENDIF.
+    result = temp18.
 
   ENDMETHOD.
 
@@ -198,26 +247,42 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     " the text of the HTTP client's last error (HTTP_COMMUNICATION_ERROR -
     " ..., cx_web_http_client_error) - CS ignores the case
     IF error_text CS `timeout` OR error_text CS `timed out` OR error_text CS `time out`.
-      result = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system did not answer in time - ` &&
-                                        `the action may have been carried out there, check before you repeat it`
-                        status_code   = 504
-                        status_reason = `Gateway Timeout` ).
+      CLEAR result.
+      result-body = `HTTP_CONNECTOR_ERROR - the source system did not answer in time - ` &&
+`the action may have been carried out there, check before you repeat it`.
+      result-status_code = 504.
+      result-status_reason = `Gateway Timeout`.
     ELSE.
-      result = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system could not be reached`
-                        status_code   = 502
-                        status_reason = `Bad Gateway` ).
+      CLEAR result.
+      result-body = `HTTP_CONNECTOR_ERROR - the source system could not be reached`.
+      result-status_code = 502.
+      result-status_reason = `Bad Gateway`.
     ENDIF.
 
   ENDMETHOD.
 
   METHOD get_security_headers.
 
-    result = VALUE #(
-        ( n = `X-Content-Type-Options`       v = `nosniff` )
-        ( n = `X-Frame-Options`              v = `SAMEORIGIN` )
-        ( n = `Referrer-Policy`              v = `strict-origin-when-cross-origin` )
-        ( n = `Permissions-Policy`           v = `geolocation=(self), microphone=(self), camera=(self), payment=(), usb=()` )
-        ( n = `Cross-Origin-Resource-Policy` v = `same-origin` ) ).
+    DATA temp19 TYPE z2ui5_if_client=>ty_t_name_value.
+    DATA temp20 LIKE LINE OF temp19.
+    CLEAR temp19.
+
+    temp20-n = `X-Content-Type-Options`.
+    temp20-v = `nosniff`.
+    INSERT temp20 INTO TABLE temp19.
+    temp20-n = `X-Frame-Options`.
+    temp20-v = `SAMEORIGIN`.
+    INSERT temp20 INTO TABLE temp19.
+    temp20-n = `Referrer-Policy`.
+    temp20-v = `strict-origin-when-cross-origin`.
+    INSERT temp20 INTO TABLE temp19.
+    temp20-n = `Permissions-Policy`.
+    temp20-v = `geolocation=(self), microphone=(self), camera=(self), payment=(), usb=()`.
+    INSERT temp20 INTO TABLE temp19.
+    temp20-n = `Cross-Origin-Resource-Policy`.
+    temp20-v = `same-origin`.
+    INSERT temp20 INTO TABLE temp19.
+    result = temp19.
 
   ENDMETHOD.
 
