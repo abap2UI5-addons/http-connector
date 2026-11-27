@@ -120,13 +120,14 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
                               status_reason = `Bad Gateway` ).
           ENDIF.
 
-        CATCH cx_root INTO DATA(lx).
+        CATCH cx_root.
           " The call never reached the source system: destination not maintained
           " or not authorized, host unreachable, timeout. The frontend renders
-          " the body of every non-2xx response in its error overlay, so the
-          " reason has to travel in it - an uncaught exception here would end in
-          " the ICF 500 page, which suppresses exactly that text.
-          ls_res = VALUE #( body          = |HTTP_CONNECTOR_ERROR - { lx->get_text( ) }|
+          " the body of every non-2xx response in its error overlay, so a body
+          " has to be there - an uncaught exception would end in the ICF 500
+          " page. It names no destination, host or user: the overlay is shown
+          " to every user, the reason is for the administrator (SM59, SMICM).
+          ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system could not be reached`
                             status_code   = 502
                             status_reason = `Bad Gateway` ).
       ENDTRY.
