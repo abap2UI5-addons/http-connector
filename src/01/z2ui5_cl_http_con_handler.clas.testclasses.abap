@@ -15,6 +15,7 @@ CLASS ltcl_test DEFINITION FINAL
     METHODS test_error_no_store  FOR TESTING RAISING cx_static_check.
     METHODS test_security_header FOR TESTING RAISING cx_static_check.
     METHODS test_timeout_is_504  FOR TESTING RAISING cx_static_check.
+    METHODS test_append_query    FOR TESTING RAISING cx_static_check.
 
     "! the value of header field name in the headers of a response, or
     "! `MISSING` when the response has no such field
@@ -181,6 +182,32 @@ CLASS ltcl_test IMPLEMENTATION.
                                         act = ls_res-status_code ).
     cl_abap_unit_assert=>assert_char_cp( exp = `*could not be reached`
                                          act = ls_res-body ).
+
+  ENDMETHOD.
+
+  METHOD test_append_query.
+
+    " by URL the query joins the URL, behind a query it already has
+    cl_abap_unit_assert=>assert_equals(
+        exp = `http://host/sap/bc/z2ui5_http_srv?app_start=z2ui5_cl_app`
+        act = z2ui5_cl_http_con_handler=>append_query( url   = `http://host/sap/bc/z2ui5_http_srv`
+                                                       query = `app_start=z2ui5_cl_app` ) ).
+    cl_abap_unit_assert=>assert_equals(
+        exp = `http://host/node?sap-client=100&z2ui5-bundle`
+        act = z2ui5_cl_http_con_handler=>append_query( url   = `http://host/node?sap-client=100`
+                                                       query = `?z2ui5-bundle` ) ).
+
+    " by destination it is the whole request URI
+    cl_abap_unit_assert=>assert_equals(
+        exp = `?z2ui5-bundle=cc`
+        act = z2ui5_cl_http_con_handler=>append_query( url   = ``
+                                                       query = `z2ui5-bundle=cc` ) ).
+
+    " and nothing is added without one
+    cl_abap_unit_assert=>assert_equals(
+        exp = `http://host/node`
+        act = z2ui5_cl_http_con_handler=>append_query( url   = `http://host/node`
+                                                       query = `` ) ).
 
   ENDMETHOD.
 

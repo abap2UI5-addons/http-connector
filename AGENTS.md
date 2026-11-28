@@ -15,7 +15,8 @@ consumer and source, and depends on the
 
 The default branch is **`standard`**, not `main`. The `cloud` branch is an
 unmaintained prototype from 2025-11: it has no CI; like `standard` it goes
-through the core's `z2ui5_cl_ui5_util_http` (`factory_cloud`), nothing from
+through the core's `z2ui5_cl_ui5_util_http` (`factory_cloud`, and still its
+`client_request`, which `standard` no longer calls), nothing from
 the core's frozen `src/99`.
 
 ## Layout
@@ -38,28 +39,30 @@ The connector calls:
 | --- | --- | --- |
 | `z2ui5_cl_ui5_http_handler=>run` | `src/02` | released; the source side is nothing more than this call |
 | `z2ui5_cl_ui5_http_handler=>_check_csrf_rejected` | `src/02` | released |
-| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `=>client_request` | `src/00/03` | not released — used **on purpose**, see below. The `query` of `get_req_info` is new in 1.147.0, `client_request` in 1.149.0 |
+| `z2ui5_cl_ui5_util_http=>factory`, `->get_req_info`, `->get_header_field`, `->set_cdata`, `->set_header_field`, `->set_status` | `src/00/03` | not released — used **on purpose**, see below. The `query` of `get_req_info` is new in 1.147.0 |
 
-The consumer needs abap2UI5 1.149.0 or newer (`client_request` of
-`z2ui5_cl_ui5_util_http`, which carries request header fields - the POST body
-goes out as `application/json; charset=utf-8`), the
-source 1.143.0 or newer (the first release with `z2ui5_cl_ui5_http_handler`).
+The consumer needs abap2UI5 1.147.0 or newer (the raw `query` of
+`get_req_info`), the source 1.143.0 or newer (the first release with
+`z2ui5_cl_ui5_http_handler`).
 
-### z2ui5_cl_ui5_util_http stays
+### Inbound through the core's utility, outbound is the connector's own
 
-Going through the core's own HTTP utility instead of `if_http_server` /
-`cl_http_client` directly is a deliberate maintainer decision: the connector
-handles the request exactly the way the framework does. Do not rewrite it to
-the kernel APIs to satisfy the linter. When the connector needs something
-the utility does not offer, extend `z2ui5_cl_ui5_util_http` in the core
-(abap2UI5, `src/00/03`) and use that here — never work around it with direct
-kernel calls in this repository. The finding is accepted in
-`abap2ui5lint-baseline.json`; the price is that a rename of that class in the
-core breaks this repository, which the weekly scheduled run exists to notice.
-The core comments `client_call` as the method this repository calls; it
-calls `client_request` now (the general form `client_call` wraps), because
-only that one carries request header fields. A core change that drops or
-narrows `client_request` has to be answered here.
+Reading the browser's request and writing its response goes through the
+core's `z2ui5_cl_ui5_util_http` instead of `if_http_server` directly - a
+deliberate maintainer decision: the connector handles the request exactly the
+way the framework does. Do not rewrite that half to the kernel API to satisfy
+the linter; the finding is accepted in `abap2ui5lint-baseline.json`, and the
+price is that a rename of that class in the core breaks this repository, which
+the weekly scheduled run exists to notice.
+
+The forwarded call is the other half, and it lives here
+(`z2ui5_cl_http_con_handler=>call_source`, on `if_http_client`). The framework
+never calls another server, so the core keeps no HTTP client for the connector
+(it carried one, `z2ui5_cl_ui5_util_http=>client_request`, which the connector
+called before). The two
+kernel classes that abaplint's dependency set does not have -
+`cl_http_client` for the create, `cl_abap_conv_in_ce` for a body without a
+charset - are named dynamically; everything else is typed.
 
 ## Build and verify
 
