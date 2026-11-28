@@ -44,9 +44,9 @@ browser talks to and the **source system** the apps run on.
 - NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
   `standard` on every push - pull abap2UI5 from its `702` branch as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5) on both systems:
-  - **consumer system:** **1.149.0 or newer** - the connector forwards the
-    query string and sends the request body as UTF-8 JSON through
-    `z2ui5_cl_ui5_util_http=>client_request`, which that release added
+  - **consumer system:** **1.147.0 or newer** - the connector forwards the
+    raw query string, which `z2ui5_cl_ui5_util_http` hands out since that
+    release
   - **source system:** **1.143.0 or newer** - the first release with
     `z2ui5_cl_ui5_http_handler`
 - On the consumer system: a destination in SM59 (type G or H) pointing to the

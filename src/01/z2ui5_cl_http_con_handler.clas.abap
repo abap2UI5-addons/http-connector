@@ -20,6 +20,48 @@ CLASS z2ui5_cl_http_con_handler DEFINITION
   PROTECTED SECTION.
   PRIVATE SECTION.
 
+    TYPES:
+      BEGIN OF ty_s_res,
+        body          TYPE string,
+        status_code   TYPE i,
+        status_reason TYPE string,
+      END OF ty_s_res.
+
+    " The forwarded call: one request to the source system through
+    " cl_http_client, by the SM59 destination or, without one, by c_url. The
+    " connector owns it - the framework itself never calls another server, so
+    " the core has no HTTP client to borrow. A call that fails comes back as
+    " the answer for the browser (get_error_response), never as an exception.
+    CLASS-METHODS call_source
+      IMPORTING
+        !method       TYPE string
+        body          TYPE string
+        !query        TYPE string
+      RETURNING
+        VALUE(result) TYPE ty_s_res.
+
+    " The query travels as the browser sent it, never parsed and encoded
+    " again. By URL it becomes part of the URL; by destination it is the
+    " whole request URI (url is empty then), which the ICF client appends to
+    " the path prefix maintained in SM59.
+    CLASS-METHODS append_query
+      IMPORTING
+        url           TYPE string
+        !query        TYPE string
+      RETURNING
+        VALUE(result) TYPE string.
+
+    " The body as text. get_cdata decodes by the charset the response names -
+    " without one the ICF falls back to ISO-8859-1 and every UTF-8 multibyte
+    " sequence comes back as two or three Latin-1 characters. JSON is UTF-8
+    " unless it says otherwise (RFC 8259), so a body without a charset is
+    " read as bytes and decoded as UTF-8.
+    CLASS-METHODS read_body
+      IMPORTING
+        io_response   TYPE REF TO if_http_response
+      RETURNING
+        VALUE(result) TYPE string.
+
     " The URL parameter that asks the source system for one of the frontend
     " bundles instead of the page (?z2ui5-bundle, ?z2ui5-bundle=cc, ...) -
     " the name z2ui5_cl_ui5_http_handler gives it, which keeps it private.
@@ -64,7 +106,7 @@ CLASS z2ui5_cl_http_con_handler DEFINITION
       IMPORTING
         error_text    TYPE string
       RETURNING
-        VALUE(result) TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
+        VALUE(result) TYPE ty_s_res.
 
     " The security headers every abap2UI5 response carries by default (the
     " t_security_header rows of the shipped user exit). A user exit of the
@@ -81,8 +123,7 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
   METHOD if_http_extension~handle_request.
 
-    DATA ls_res TYPE z2ui5_cl_ui5_util_http=>ty_s_http_res.
-    DATA ls_call TYPE z2ui5_cl_ui5_util_http=>ty_s_client_req.
+    DATA ls_res TYPE ty_s_res.
 
     DATA(lo_server) = z2ui5_cl_ui5_util_http=>factory( server ).
     DATA(ls_req) = lo_server->get_req_info( ).
@@ -100,45 +141,20 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
 
     ELSE.
 
-      TRY.
-          " the query goes along raw - ?z2ui5-bundle, app_start and every
-          " other URL parameter reach the source system as the browser sent
-          " them. The path does not: the source answers on its own node.
-          " A URL is used only without a destination; next to one it would
-          " be read as the path below it
-          ls_call = VALUE #( method      = ls_req-method
-                             body        = ls_req-body
-                             destination = c_destination
-                             query       = ls_req-query ).
-          IF c_destination IS INITIAL OR c_destination = `NONE`.
-            ls_call-url = c_url.
-          ENDIF.
-          " the roundtrip body is JSON and leaves this system as UTF-8 - without
-          " a charset the HTTP client and the source system's ICF fall back to
-          " ISO-8859-1, and every character outside Latin-1 the user typed was
-          " lost on the way
-          IF ls_call-body IS NOT INITIAL.
-            ls_call-t_header = VALUE #( ( n = `content-type`
-                                          v = `application/json; charset=utf-8` ) ).
-          ENDIF.
-          ls_res = z2ui5_cl_ui5_util_http=>client_request( ls_call ).
+      " the query goes along raw - ?z2ui5-bundle, app_start and every other
+      " URL parameter reach the source system as the browser sent them. The
+      " path does not: the source answers on its own node.
+      ls_res = call_source( method = ls_req-method
+                            body   = ls_req-body
+                            query  = ls_req-query ).
 
-          " a response without a status line would go out as status 0, which the
-          " browser reports as a network error without any readable reason
-          IF ls_res-status_code IS INITIAL.
-            ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`
-                              status_code   = 502
-                              status_reason = `Bad Gateway` ).
-          ENDIF.
-
-        CATCH cx_root INTO DATA(lx_call).
-          " The call failed: destination not maintained or not authorized,
-          " host unreachable - or no answer in time. The frontend renders
-          " the body of every non-2xx response in its error overlay, so a body
-          " has to be there - an uncaught exception would end in the ICF 500
-          " page. The reason is for the administrator (SM59, SMICM).
-          ls_res = get_error_response( lx_call->get_text( ) ).
-      ENDTRY.
+      " a response without a status line would go out as status 0, which the
+      " browser reports as a network error without any readable reason
+      IF ls_res-status_code IS INITIAL.
+        ls_res = VALUE #( body          = `HTTP_CONNECTOR_ERROR - the source system answered without a status code`
+                          status_code   = 502
+                          status_reason = `Bad Gateway` ).
+      ENDIF.
 
     ENDIF.
 
@@ -151,6 +167,131 @@ CLASS z2ui5_cl_http_con_handler IMPLEMENTATION.
     ENDLOOP.
     lo_server->set_status( code   = ls_res-status_code
                            reason = ls_res-status_reason ).
+
+  ENDMETHOD.
+
+  METHOD call_source.
+
+    DATA lo_client TYPE REF TO if_http_client.
+    DATA lv_destination TYPE c LENGTH 32.
+    DATA lv_message TYPE string.
+
+    " The class is named dynamically, and only here: abaplint's dependency
+    " set has the interface if_http_client but not cl_http_client, and
+    " everything after the create goes through the interface.
+    " A URL is used only without a destination
+    DATA(lv_class) = `CL_HTTP_CLIENT`.
+    lv_destination = c_destination.
+    IF lv_destination IS INITIAL OR lv_destination = `NONE`.
+      DATA(lv_url) = append_query( url   = c_url
+                                   query = query ).
+      CALL METHOD (lv_class)=>create_by_url
+        EXPORTING
+          url    = lv_url
+        IMPORTING
+          client = lo_client
+        EXCEPTIONS
+          OTHERS = 1.
+    ELSE.
+      CALL METHOD (lv_class)=>create_by_destination
+        EXPORTING
+          destination = lv_destination
+        IMPORTING
+          client      = lo_client
+        EXCEPTIONS
+          OTHERS      = 1.
+    ENDIF.
+    " destination not maintained or not authorized, no URL - the frontend
+    " renders the body of every non-2xx response in its error overlay, so a
+    " body has to be there. The reason is for the administrator (SM59, SMICM).
+    IF sy-subrc <> 0 OR lo_client IS NOT BOUND.
+      result = get_error_response( `` ).
+      RETURN.
+    ENDIF.
+
+    " no logon popup in a handler: a missing or wrong logon is an error
+    lo_client->propertytype_logon_popup = if_http_client=>co_disabled.
+
+    IF lv_destination IS NOT INITIAL AND lv_destination <> `NONE` AND query IS NOT INITIAL.
+      lo_client->request->set_header_field( name  = `~request_uri`
+                                            value = append_query( url   = ``
+                                                                  query = query ) ).
+    ENDIF.
+    " the roundtrip body is JSON and leaves this system as UTF-8 - without a
+    " charset the HTTP client and the source system's ICF fall back to
+    " ISO-8859-1, and every character outside Latin-1 the user typed was lost
+    " on the way
+    IF body IS NOT INITIAL.
+      lo_client->request->set_header_field( name  = `content-type`
+                                            value = `application/json; charset=utf-8` ).
+    ENDIF.
+    lo_client->request->set_method( method ).
+    lo_client->request->set_cdata( body ).
+
+    lo_client->send( EXCEPTIONS OTHERS = 1 ).
+    IF sy-subrc = 0.
+      lo_client->receive( EXCEPTIONS OTHERS = 1 ).
+    ENDIF.
+    IF sy-subrc <> 0.
+      " host unreachable - or no answer in time, which the text tells apart
+      lo_client->get_last_error( IMPORTING message = lv_message ).
+      result = get_error_response( lv_message ).
+    ELSE.
+      result-body = read_body( lo_client->response ).
+      lo_client->response->get_status( IMPORTING code   = result-status_code
+                                                 reason = result-status_reason ).
+    ENDIF.
+
+    " on both paths: the ICM connection would otherwise stay open for the
+    " lifetime of the work process. A failed close changes nothing here
+    lo_client->close( EXCEPTIONS OTHERS = 0 ).
+
+  ENDMETHOD.
+
+  METHOD append_query.
+
+    result = url.
+    DATA(lv_query) = shift_left( val = query
+                                 sub = `?` ).
+    IF lv_query IS INITIAL.
+      RETURN.
+    ENDIF.
+    IF result CS `?`.
+      result = |{ result }&{ lv_query }|.
+    ELSE.
+      result = |{ result }?{ lv_query }|.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD read_body.
+
+    IF to_lower( io_response->get_header_field( `content-type` ) ) CS `charset=`.
+      result = io_response->get_cdata( ).
+      RETURN.
+    ENDIF.
+
+    DATA(lv_bytes) = io_response->get_data( ).
+    " named dynamically for the reason call_source gives; bytes that are
+    " not UTF-8 after all are left to the ICF
+    DATA lo_conv TYPE REF TO object.
+    DATA lv_encoding TYPE c LENGTH 20.
+    lv_encoding = `UTF-8`.
+    DATA(lv_class) = `CL_ABAP_CONV_IN_CE`.
+    TRY.
+        CALL METHOD (lv_class)=>create
+          EXPORTING
+            encoding = lv_encoding
+          RECEIVING
+            conv     = lo_conv.
+        CALL METHOD lo_conv->(`CONVERT`)
+          EXPORTING
+            input = lv_bytes
+          IMPORTING
+            data  = result.
+      CATCH cx_root.
+        result = io_response->get_cdata( ).
+    ENDTRY.
 
   ENDMETHOD.
 
